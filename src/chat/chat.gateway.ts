@@ -16,6 +16,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   onModuleInit() {
     console.warn('Chat Server is Up');
+    this.server.emit('getOnlineUsers', Object.keys(userSocketMap));
     // this.server.on('connection', (socket) => {
     //   console.log('Connected : ', socket?.id);
     // });
@@ -34,13 +35,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.error('Client disconnected:', socket.id);
     const userId = socket.handshake.query.userId as string;
     delete userSocketMap[userId];
+    this.server.emit('getOnlineUsers', Object.keys(userSocketMap));
   }
 
   @SubscribeMessage('chatMessage')
   handleMessage(@MessageBody() body: any, receiverId: string) {
     const socketId = this.getSocketIdUsingUserId(receiverId);
-    console.log('socket id for the reciver id :::  ', receiverId);
-    console.warn(userSocketMap, receiverId);
     this.server.to(socketId).emit('chatMessage', {
       message: 'message',
       content: body,
@@ -49,7 +49,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   getSocketIdUsingUserId(userId: string) {
-    console.log('user online list ' + userSocketMap);
     return userSocketMap[userId];
   }
 }
