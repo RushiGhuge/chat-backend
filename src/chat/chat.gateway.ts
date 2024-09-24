@@ -10,16 +10,17 @@ import { Socket } from 'socket.io';
 
 export const userSocketMap = {};
 
-@WebSocketGateway()
+@WebSocketGateway({
+  transports: ['websocket', 'polling'], // Use websocket as primary transport
+  pingTimeout: 60000, // 60 seconds before considering a connection dead
+  pingInterval: 25000,
+})
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server;
 
   onModuleInit() {
     console.warn('Chat Server is Up');
     this.server.emit('getOnlineUsers', Object.keys(userSocketMap));
-    // this.server.on('connection', (socket) => {
-    //   console.log('Connected : ', socket?.id);
-    // });
   }
 
   handleConnection(socket: Socket) {
@@ -27,6 +28,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = socket.handshake.query.userId as string;
     if (userId?.length > 0 && userId !== undefined) {
       userSocketMap[userId] = socket?.id;
+      socket.join(userId);
       this.server.emit('getOnlineUsers', Object.keys(userSocketMap));
     }
   }
